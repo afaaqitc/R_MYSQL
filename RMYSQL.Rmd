@@ -1,0 +1,329 @@
+---
+title: "R To MYSQL & GSheet"
+output: html_document
+date: "2024-10-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load Libraries
+
+# library(pacman)
+# library(tidyquant)
+# library(tidyr)
+# library(dplyr)
+# library(gt)
+# library(DT)
+# library(formattable)
+# library(data.table)
+# library(gmodels)
+# library(stringr)
+# library(lubridate)
+# library(scales)
+# library(ggplot2)
+# library(GGally)
+# library(plotly)
+# library(DBI)
+# library(RSQLite)
+# library(googledrive)
+# library(googlesheets4)
+# library(janitor)
+# library(forecast)
+# library(tseries)
+# library(openxlsx)
+# library(RMySQL)
+# library(RSQLite)
+# library(DBI)
+
+```
+
+## Connect
+
+conn<-dbConnect( RMySQL::MySQL(),
+                 dbname= 'sql8737204',
+                 host='sql8.freesqldatabase.com' ,port=3306 ,
+                 user= 'sql8737204', password='CVsPciP24E' )
+
+
+dbListTables(conn = conn)
+
+
+
+cat<-dbReadTable(conn = conn,"Categories") |> clean_names() 
+cus<-dbReadTable(conn = conn,"Customers")  |> clean_names()
+item<-dbReadTable(conn = conn,"Products")  |> clean_names()
+
+order<-read.csv("~/Desktop/RSQLite_GSheet_Full_Model/orders.csv") |> clean_names()
+
+dbWriteTable(conn =conn ,name ="Orders" ,value =as_tibble(order) )
+
+order<-dbReadTable(conn,"Orders") |> clean_names()
+
+od<-dbReadTable(conn = conn,"OrderDetails") |> clean_names()
+
+emp<-read.csv("~/Desktop/dd/Employees.csv")   # Fix BirthDate Null load csv table
+
+dbWriteTable(conn,name ="Employees" ,value = as_tibble(emp)) # Write To DB 
+ 
+emp<-dbReadTable(conn = conn,"Employees")  |> clean_names() # Load From Database
+
+shp<-dbGetQuery(conn,"select * from Shippers") |> clean_names() |> select(c(1,2))
+
+
+
+#Joins 
+hd<-order |> inner_join(cus,by="customer_id") |> 
+  inner_join(emp,by="employee_id") |> clean_names()
+
+od<-
+  item |> inner_join(cat,by="category_id") |> 
+  inner_join(od,by="product_id") |> mutate(sales=price*quantity) 
+
+
+hd<-
+  od |> group_by(order_id) |> 
+  summarize(sales=sum(sales),qty=sum(quantity),
+            items=n()) |> inner_join(hd,by = "order_id") 
+
+
+hd<-
+  hd |> group_by(customer_name) |> summarize(sales=sum(sales),.groups = "drop") |> 
+  arrange(desc(sales))|>  mutate(pct=sales/sum(hd$sales),
+                                 class=case_when(pct>=0.04 ~ "A",pct>=0.01 ~ "B",pct>=0.005 ~ "C" ,TRUE~"D"))|> 
+  select(1,4)|>  inner_join(hd,by = "customer_name")  
+
+
+
+totals<-
+  stack(hd |> summarize(sales=sum(sales),qty=sum(qty),orders=n())) |> 
+  rename(Total=values)
+
+
+# Reports Tables
+
+top10_customers<-
+  hd |> filter(customer_name %in% unlist(
+    hd |> group_by(customer_name) |>
+      summarize(sales=sum(sales),
+                .groups = "drop") |> 
+      arrange(desc(sales)) |> head(10) |> select(customer_name) 
+  ))|> 
+  mutate(order_date=as.Date(order_date),
+         months=month(order_date),years=year(order_date)) |> 
+  group_by(months,years=as.factor( years),
+           customer_name) |> 
+  summarize(sales=sum(sales),.groups = "drop")|>
+  pivot_wider(id_cols = c(customer_name,years),
+              names_from = months,values_from = sales,values_fill = F) |> 
+  arrange(years) |> adorn_totals("col")|> 
+  mutate(pct=percent(round( Total/sum(hd$sales),4)))|> 
+  adorn_totals("row") 
+
+
+top10_customers_countries<-
+hd |> group_by(country,customer_name,class) |> 
+summarize(sales=sum(sales),.groups = "drop") |>
+arrange(desc(sales)) |> head(10) |> pivot_wider(id_cols =c(customer_name,class) ,
+names_from =country ,values_from = sales,values_fill = FALSE) |> adorn_totals("col") |> 
+mutate(pct=percent(round( Total/sum(hd$sales),4))) |> adorn_totals("row")
+
+
+
+top5_countries<-
+hd |> group_by(country) |> summarize(sales=sum(sales)) |> 
+arrange(desc(sales)) |> head(5) |> mutate(pct=percent(round(sales/sum(hd$sales),4)))
+
+
+emp_sales<-
+hd |> mutate(order_date=as.Date(order_date),
+months=month(order_date),years=year(order_date)) |> 
+group_by(months,years=as.factor( years),emp=paste0(first_name," ",last_name)) |> 
+summarize(sales=sum(sales),.groups = "drop")|>
+pivot_wider(id_cols = c(emp,years),names_from = months,values_from = sales,values_fill = F) |> 
+arrange(years) |> adorn_totals("col")|> 
+mutate(pct=percent(Total/sum(hd$sales)))|> adorn_totals("row")
+
+
+sales_emp_edu<-
+hd |> mutate(emp_name=paste(first_name,last_name,sep=" ")) |> 
+mutate(edu=case_when(notes %like% "psychology" ~ "psychology",
+notes %like% "comm" ~"commerical",notes %like% "Eng" ~"English",
+notes %like% "economics" ~"economics",notes %like% "Peace C" ~"Peace Corps",
+notes %like% "chemi" ~"chemistry",TRUE ~ "other")) |> 
+group_by(edu) |> summarize(sales=sum(sales)) |> arrange(desc(sales)) 
+
+
+top10_items<-
+od |> group_by(category_name,product_name) |> 
+summarize(sales=sum(sales),.groups = "drop") |> 
+mutate(pct=percent(round( sales/sum(sales),4)))|> 
+arrange((category_name),desc(sales)) |> head(10) |> 
+adorn_totals("row")
+
+
+top5_countries_byEmp<- 
+  hd |> filter(country %in%  (top5_countries |> select(country)|> unlist() )) |> 
+  group_by(emp=paste(first_name,last_name,sep = " "),country)|>
+  summarize(sales=sum(sales)) |> 
+  pivot_table(.rows = ~emp,.columns = 
+                ~country,.values =~sales ,fill_na = F)|> 
+  adorn_totals("col")  |>  mutate(pct=percent(Total/sum(hd$sales))) |> 
+  arrange(desc(Total)) |> adorn_totals("row")
+
+
+top10_cities<-
+  hd |> group_by(country,city) |> 
+  summarize(sales=sum(sales)) |> arrange(desc(sales)) |> head(10) |> mutate(pct=percent(round(sales/sum(hd$sales),4)))
+
+Totals_monthyears<-
+hd |> mutate(as.Date(order_date)) |> 
+mutate(monthn=month(order_date),
+years=year(order_date)) |>  
+group_by(years,monthn) |> 
+summarize(saless=sum(sales),order=n(),quantities=sum(qty),.groups = "drop") |> 
+arrange(years) |> 
+mutate(pct=percent( saless/sum(hd$sales))) |> 
+adorn_totals("row")
+
+
+
+top10_countries_byshippers<-
+shp |> inner_join(hd,by="shipper_id") |> 
+group_by(shipper_name,country) |> 
+summarize(sales=sum(sales)) |> 
+arrange(desc(sales))|> 
+pivot_wider(id_cols =country ,names_from =shipper_name ,
+values_from =sales ,values_fill = F) |> 
+adorn_totals("col") |>
+mutate(pct=percent(round(Total/sum(hd$sales),4)) ) |>
+arrange(desc(Total)) |> head(10)
+
+
+# GSheet Reports Outputs
+
+
+gs4_auth()
+ 
+gs4_create(name = "Sales_MYSQL")
+
+
+gs4_find("Sales_MYSQL")
+
+
+# Delete Sheets 
+
+gs4_find("Sales_MYSQL") |> 
+sheet_add(sheet = "base",.before = 1)
+
+gs4_find("Sales_MYSQL") |>  sheet_delete(sheet = "employees")
+
+gs4_find("Sales_MYSQL") |> sheet_delete(sheet = "sales_emp_edu")
+
+gs4_find("Sales_MYSQL") |>  sheet_delete(sheet = "countries_emp")
+
+gs4_find("Sales_MYSQL") |>  sheet_delete(sheet = "customers")
+
+gs4_find("Sales_MYSQL") |>  sheet_delete(sheet = "customers_countries")
+
+gs4_find("Sales_MYSQL") |>  sheet_delete(sheet = "items")
+
+gs4_find("Sales_MYSQL") |>  sheet_delete(sheet = "cities")
+
+gs4_find("Sales_MYSQL") |>  sheet_delete(sheet = "countries")
+
+gs4_find("Sales_MYSQL") |>  sheet_delete(sheet = "Total_per_MY")
+
+
+# Create Report Sheets 
+
+gs4_find("Sales_MYSQL") |> 
+  sheet_add(sheet = "employees") |> 
+  sheet_write(sheet = "employees",data=emp_sales)
+
+gs4_find("Sales_MYSQL") |> 
+  sheet_add(sheet = "sales_emp_edu") |> 
+  sheet_write(sheet = "sales_emp_edu",data=sales_emp_edu)
+
+gs4_find("Sales_MYSQL") |> 
+  sheet_add(sheet = "countries_emp") |> 
+  sheet_write(sheet = "countries_emp",data=top5_countries_byEmp)
+
+gs4_find("Sales_MYSQL") |>  
+  sheet_add(sheet = "customers_MY") |> 
+  sheet_write(sheet = "customers_MY",data=top10_customers)
+
+gs4_find("Sales_MYSQL") |>  
+  sheet_add(sheet = "customers_countries") |> 
+  sheet_write(sheet = "customers_countries",data=top10_customers_countries)
+
+gs4_find("Sales_MYSQL") |> 
+  sheet_add(sheet = "items") |> 
+  sheet_write(sheet = "items",data=top10_items)
+
+gs4_find("Sales_MYSQL") |>  
+  sheet_add(sheet = "cities") |> 
+  sheet_write(sheet = "cities",data=top10_cities)
+
+gs4_find("Sales_MYSQL") |>  
+  sheet_add(sheet = "countries") |> 
+  sheet_write(sheet = "countries",data=top5_countries)
+
+gs4_find("Sales_MYSQL") |>  
+  sheet_add(sheet = "Total_per_MY") |> 
+  sheet_write(sheet = "Total_per_MY",data=Totals_monthyears)
+
+
+
+gs4_find("Sales_MYSQL") |> 
+sheet_add(sheet = "countries_shippers") |> 
+sheet_write(sheet = "countries_shippers",data=top10_countries_byshippers)
+
+
+
+# Workbook Manage 
+
+gs4_find("Sales_MYSQL") |> sheet_names()
+
+gs4_find("Sales_MYSQL") |> sheet_delete(sheet = "Sheet1")
+
+gs4_find("Sales_MYSQL") |> sheet_rename(sheet = "base",new_name ="Base" )
+
+
+
+# Outputs
+
+lst<-
+  list("Total_per_MY"=Totals_monthyears,
+       "Cities"=top10_cities,"customers_my"=top10_customers,"Customers_countries"=top10_customers_countries,
+       "items"=top10_items,
+       "countries"=top5_countries,"countriesby_emp"= top5_countries_byEmp,
+       "emp_sales"=emp_sales)
+
+
+write.xlsx(lst,file = "reposrt.xlsx")
+
+
+dbWriteTable(conn = conn,name ="top_customers" ,
+value =tibble::as_tibble(top10_customers) )
+ 
+gs4_find("Sales_MYSQL") |> sheet_names()
+
+
+# Upload Tables To DB
+
+dbWriteTable(conn = conn,name ="Sales_Edu" ,value = as_tibble(sales_emp_edu))
+
+dbWriteTable(conn = conn,name = "top_customers_countries",
+value = as_tibble(top10_customers_countries))
+
+dbWriteTable(conn =conn ,name = "top5_countries_emp",value =as_tibble( top5_countries_byEmp ))
+
+dbWriteTable(conn =conn ,name = "Sales_Totals",value =as_tibble(Totals_monthyears ))
+
+
+dbWriteTable(conn = conn,name = "top_countries_shippers",
+value =as_tibble(top10_countries_byshippers))
+
