@@ -1,5 +1,5 @@
 ---
-title: "R To MYSQL & GSheet"
+title: "RMYSQL"
 output: html_document
 date: "2024-10-18"
 ---

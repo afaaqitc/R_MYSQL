@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+<meta name="date" content="2024-10-18" />
+
+<title>RMYSQL</title>
+
+<script src="site_libs/header-attrs-2.28/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "\e258";
+  font-family: 'Glyphicons Halflings';
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">RMYSQL</h1>
+<h4 class="date">2024-10-18</h4>
+
+</div>
+
+
+<pre class="r"><code># Load Libraries
+
+# library(pacman)
+# library(tidyquant)
+# library(tidyr)
+# library(dplyr)
+# library(gt)
+# library(DT)
+# library(formattable)
+# library(data.table)
+# library(gmodels)
+# library(stringr)
+# library(lubridate)
+# library(scales)
+# library(ggplot2)
+# library(GGally)
+# library(plotly)
+# library(DBI)
+# library(RSQLite)
+# library(googledrive)
+# library(googlesheets4)
+# library(janitor)
+# library(forecast)
+# library(tseries)
+# library(openxlsx)
+# library(RMySQL)
+# library(RSQLite)
+# library(DBI)</code></pre>
+<div id="connect" class="section level2">
+<h2>Connect</h2>
+<p>conn&lt;-dbConnect( RMySQL::MySQL(), dbname= ‘sql8737204’,
+host=‘sql8.freesqldatabase.com’ ,port=3306 , user= ‘sql8737204’,
+password=‘CVsPciP24E’ )</p>
+<p>dbListTables(conn = conn)</p>
+<p>cat&lt;-dbReadTable(conn = conn,“Categories”) |&gt; clean_names()
+cus&lt;-dbReadTable(conn = conn,“Customers”) |&gt; clean_names()
+item&lt;-dbReadTable(conn = conn,“Products”) |&gt; clean_names()</p>
+<p>order&lt;-read.csv(“~/Desktop/RSQLite_GSheet_Full_Model/orders.csv”)
+|&gt; clean_names()</p>
+<p>dbWriteTable(conn =conn ,name =“Orders” ,value =as_tibble(order)
+)</p>
+<p>order&lt;-dbReadTable(conn,“Orders”) |&gt; clean_names()</p>
+<p>od&lt;-dbReadTable(conn = conn,“OrderDetails”) |&gt;
+clean_names()</p>
+<p>emp&lt;-read.csv(“~/Desktop/dd/Employees.csv”) # Fix BirthDate Null
+load csv table</p>
+<p>dbWriteTable(conn,name =“Employees” ,value = as_tibble(emp)) # Write
+To DB</p>
+<p>emp&lt;-dbReadTable(conn = conn,“Employees”) |&gt; clean_names() #
+Load From Database</p>
+<p>shp&lt;-dbGetQuery(conn,“select * from Shippers”) |&gt; clean_names()
+|&gt; select(c(1,2))</p>
+<p>#Joins hd&lt;-order |&gt; inner_join(cus,by=“customer_id”) |&gt;
+inner_join(emp,by=“employee_id”) |&gt; clean_names()</p>
+<p>od&lt;- item |&gt; inner_join(cat,by=“category_id”) |&gt;
+inner_join(od,by=“product_id”) |&gt; mutate(sales=price*quantity)</p>
+<p>hd&lt;- od |&gt; group_by(order_id) |&gt;
+summarize(sales=sum(sales),qty=sum(quantity), items=n()) |&gt;
+inner_join(hd,by = “order_id”)</p>
+<p>hd&lt;- hd |&gt; group_by(customer_name) |&gt;
+summarize(sales=sum(sales),.groups = “drop”) |&gt;
+arrange(desc(sales))|&gt; mutate(pct=sales/sum(hd$sales),
+class=case_when(pct&gt;=0.04 ~ “A”,pct&gt;=0.01 ~ “B”,pct&gt;=0.005 ~
+“C” ,TRUE~“D”))|&gt; select(1,4)|&gt; inner_join(hd,by =
+“customer_name”)</p>
+<p>totals&lt;- stack(hd |&gt;
+summarize(sales=sum(sales),qty=sum(qty),orders=n())) |&gt;
+rename(Total=values)</p>
+</div>
+<div id="reports-tables" class="section level1">
+<h1>Reports Tables</h1>
+<p>top10_customers&lt;- hd |&gt; filter(customer_name %in% unlist( hd
+|&gt; group_by(customer_name) |&gt; summarize(sales=sum(sales), .groups
+= “drop”) |&gt; arrange(desc(sales)) |&gt; head(10) |&gt;
+select(customer_name) ))|&gt; mutate(order_date=as.Date(order_date),
+months=month(order_date),years=year(order_date)) |&gt;
+group_by(months,years=as.factor( years), customer_name) |&gt;
+summarize(sales=sum(sales),.groups = “drop”)|&gt; pivot_wider(id_cols =
+c(customer_name,years), names_from = months,values_from =
+sales,values_fill = F) |&gt; arrange(years) |&gt;
+adorn_totals(“col”)|&gt; mutate(pct=percent(round(
+Total/sum(hd$sales),4)))|&gt; adorn_totals(“row”)</p>
+<p>top10_customers_countries&lt;- hd |&gt;
+group_by(country,customer_name,class) |&gt;
+summarize(sales=sum(sales),.groups = “drop”) |&gt; arrange(desc(sales))
+|&gt; head(10) |&gt; pivot_wider(id_cols =c(customer_name,class) ,
+names_from =country ,values_from = sales,values_fill = FALSE) |&gt;
+adorn_totals(“col”) |&gt; mutate(pct=percent(round(
+Total/sum(hd$sales),4))) |&gt; adorn_totals(“row”)</p>
+<p>top5_countries&lt;- hd |&gt; group_by(country) |&gt;
+summarize(sales=sum(sales)) |&gt; arrange(desc(sales)) |&gt; head(5)
+|&gt; mutate(pct=percent(round(sales/sum(hd$sales),4)))</p>
+<p>emp_sales&lt;- hd |&gt; mutate(order_date=as.Date(order_date),
+months=month(order_date),years=year(order_date)) |&gt;
+group_by(months,years=as.factor( years),emp=paste0(first_name,”
+“,last_name)) |&gt; summarize(sales=sum(sales),.groups =”drop”)|&gt;
+pivot_wider(id_cols = c(emp,years),names_from = months,values_from =
+sales,values_fill = F) |&gt; arrange(years) |&gt;
+adorn_totals(“col”)|&gt; mutate(pct=percent(Total/sum(hd$sales)))|&gt;
+adorn_totals(“row”)</p>
+<p>sales_emp_edu&lt;- hd |&gt;
+mutate(emp_name=paste(first_name,last_name,sep=” “)) |&gt;
+mutate(edu=case_when(notes %like%”psychology” ~ “psychology”, notes
+%like% “comm” ~“commerical”,notes %like% “Eng” ~“English”, notes %like%
+“economics” ~“economics”,notes %like% “Peace C” ~“Peace Corps”, notes
+%like% “chemi” ~“chemistry”,TRUE ~ “other”)) |&gt; group_by(edu) |&gt;
+summarize(sales=sum(sales)) |&gt; arrange(desc(sales))</p>
+<p>top10_items&lt;- od |&gt; group_by(category_name,product_name) |&gt;
+summarize(sales=sum(sales),.groups = “drop”) |&gt;
+mutate(pct=percent(round( sales/sum(sales),4)))|&gt;
+arrange((category_name),desc(sales)) |&gt; head(10) |&gt;
+adorn_totals(“row”)</p>
+<p>top5_countries_byEmp&lt;- hd |&gt; filter(country %in%
+(top5_countries |&gt; select(country)|&gt; unlist() )) |&gt;
+group_by(emp=paste(first_name,last_name,sep = ” “),country)|&gt;
+summarize(sales=sum(sales)) |&gt; pivot_table(.rows = ~emp,.columns =
+~country,.values =~sales ,fill_na = F)|&gt; adorn_totals(”col”) |&gt;
+mutate(pct=percent(Total/sum(hd$sales))) |&gt; arrange(desc(Total))
+|&gt; adorn_totals(“row”)</p>
+<p>top10_cities&lt;- hd |&gt; group_by(country,city) |&gt;
+summarize(sales=sum(sales)) |&gt; arrange(desc(sales)) |&gt; head(10)
+|&gt; mutate(pct=percent(round(sales/sum(hd$sales),4)))</p>
+<p>Totals_monthyears&lt;- hd |&gt; mutate(as.Date(order_date)) |&gt;
+mutate(monthn=month(order_date), years=year(order_date)) |&gt;<br />
+group_by(years,monthn) |&gt;
+summarize(saless=sum(sales),order=n(),quantities=sum(qty),.groups =
+“drop”) |&gt; arrange(years) |&gt; mutate(pct=percent(
+saless/sum(hd$sales))) |&gt; adorn_totals(“row”)</p>
+<p>top10_countries_byshippers&lt;- shp |&gt;
+inner_join(hd,by=“shipper_id”) |&gt; group_by(shipper_name,country)
+|&gt; summarize(sales=sum(sales)) |&gt; arrange(desc(sales))|&gt;
+pivot_wider(id_cols =country ,names_from =shipper_name , values_from
+=sales ,values_fill = F) |&gt; adorn_totals(“col”) |&gt;
+mutate(pct=percent(round(Total/sum(hd$sales),4)) ) |&gt;
+arrange(desc(Total)) |&gt; head(10)</p>
+</div>
+<div id="gsheet-reports-outputs" class="section level1">
+<h1>GSheet Reports Outputs</h1>
+<p>gs4_auth()</p>
+<p>gs4_create(name = “Sales_MYSQL”)</p>
+<p>gs4_find(“Sales_MYSQL”)</p>
+</div>
+<div id="delete-sheets" class="section level1">
+<h1>Delete Sheets</h1>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “base”,.before =
+1)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “employees”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet =
+“sales_emp_edu”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet =
+“countries_emp”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “customers”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet =
+“customers_countries”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “items”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “cities”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “countries”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet =
+“Total_per_MY”)</p>
+</div>
+<div id="create-report-sheets" class="section level1">
+<h1>Create Report Sheets</h1>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “employees”) |&gt;
+sheet_write(sheet = “employees”,data=emp_sales)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “sales_emp_edu”)
+|&gt; sheet_write(sheet = “sales_emp_edu”,data=sales_emp_edu)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “countries_emp”)
+|&gt; sheet_write(sheet = “countries_emp”,data=top5_countries_byEmp)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt;<br />
+sheet_add(sheet = “customers_MY”) |&gt; sheet_write(sheet =
+“customers_MY”,data=top10_customers)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt;<br />
+sheet_add(sheet = “customers_countries”) |&gt; sheet_write(sheet =
+“customers_countries”,data=top10_customers_countries)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “items”) |&gt;
+sheet_write(sheet = “items”,data=top10_items)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt;<br />
+sheet_add(sheet = “cities”) |&gt; sheet_write(sheet =
+“cities”,data=top10_cities)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt;<br />
+sheet_add(sheet = “countries”) |&gt; sheet_write(sheet =
+“countries”,data=top5_countries)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt;<br />
+sheet_add(sheet = “Total_per_MY”) |&gt; sheet_write(sheet =
+“Total_per_MY”,data=Totals_monthyears)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “countries_shippers”)
+|&gt; sheet_write(sheet =
+“countries_shippers”,data=top10_countries_byshippers)</p>
+</div>
+<div id="workbook-manage" class="section level1">
+<h1>Workbook Manage</h1>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_names()</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “Sheet1”)</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_rename(sheet = “base”,new_name
+=“Base” )</p>
+</div>
+<div id="outputs" class="section level1">
+<h1>Outputs</h1>
+<p>lst&lt;- list(“Total_per_MY”=Totals_monthyears,
+“Cities”=top10_cities,“customers_my”=top10_customers,“Customers_countries”=top10_customers_countries,
+“items”=top10_items, “countries”=top5_countries,“countriesby_emp”=
+top5_countries_byEmp, “emp_sales”=emp_sales)</p>
+<p>write.xlsx(lst,file = “reposrt.xlsx”)</p>
+<p>dbWriteTable(conn = conn,name =“top_customers” , value
+=tibble::as_tibble(top10_customers) )</p>
+<p>gs4_find(“Sales_MYSQL”) |&gt; sheet_names()</p>
+</div>
+<div id="upload-tables-to-db" class="section level1">
+<h1>Upload Tables To DB</h1>
+<p>dbWriteTable(conn = conn,name =“Sales_Edu” ,value =
+as_tibble(sales_emp_edu))</p>
+<p>dbWriteTable(conn = conn,name = “top_customers_countries”, value =
+as_tibble(top10_customers_countries))</p>
+<p>dbWriteTable(conn =conn ,name = “top5_countries_emp”,value
+=as_tibble( top5_countries_byEmp ))</p>
+<p>dbWriteTable(conn =conn ,name = “Sales_Totals”,value
+=as_tibble(Totals_monthyears ))</p>
+<p>dbWriteTable(conn = conn,name = “top_countries_shippers”, value
+=as_tibble(top10_countries_byshippers))</p>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
