@@ -167,34 +167,13 @@ pre code {
 </div>
 
 
-<pre class="r"><code># Load Libraries
-
-# library(pacman)
-# library(tidyquant)
-# library(tidyr)
-# library(dplyr)
-# library(gt)
-# library(DT)
-# library(formattable)
-# library(data.table)
-# library(gmodels)
-# library(stringr)
-# library(lubridate)
-# library(scales)
-# library(ggplot2)
-# library(GGally)
-# library(plotly)
-# library(DBI)
-# library(RSQLite)
-# library(googledrive)
-# library(googlesheets4)
-# library(janitor)
-# library(forecast)
-# library(tseries)
-# library(openxlsx)
-# library(RMySQL)
-# library(RSQLite)
-# library(DBI)</code></pre>
+<div id="load-libraries" class="section level1">
+<h1>Load Libraries:</h1>
+<p>library(pacman)</p>
+<p>p_load(“janitor”,“tibble”,“scales”,“lubridate”,“formattable”,
+“data.table”,“stringr”,“DT”,“GGally”,“gt”,“openxlsx”,
+“rvest”,“readr”,“readxl”,“tidyr”,“dplyr”,“RMySQL”,“RSQLite”,“GGally”,“DBI”,“googledrive”,“googlesheet4”)</p>
+<hr />
 <div id="connect" class="section level2">
 <h2>Connect</h2>
 <p>conn&lt;-dbConnect( RMySQL::MySQL(), dbname= ‘sql8737204’,
@@ -219,7 +198,11 @@ To DB</p>
 Load From Database</p>
 <p>shp&lt;-dbGetQuery(conn,“select * from Shippers”) |&gt; clean_names()
 |&gt; select(c(1,2))</p>
-<p>#Joins hd&lt;-order |&gt; inner_join(cus,by=“customer_id”) |&gt;
+<hr />
+</div>
+<div id="joins" class="section level2">
+<h2>Joins</h2>
+<p>hd&lt;-order |&gt; inner_join(cus,by=“customer_id”) |&gt;
 inner_join(emp,by=“employee_id”) |&gt; clean_names()</p>
 <p>od&lt;- item |&gt; inner_join(cat,by=“category_id”) |&gt;
 inner_join(od,by=“product_id”) |&gt; mutate(sales=price*quantity)</p>
@@ -235,9 +218,10 @@ class=case_when(pct&gt;=0.04 ~ “A”,pct&gt;=0.01 ~ “B”,pct&gt;=0.005 ~
 <p>totals&lt;- stack(hd |&gt;
 summarize(sales=sum(sales),qty=sum(qty),orders=n())) |&gt;
 rename(Total=values)</p>
+<hr />
 </div>
-<div id="reports-tables" class="section level1">
-<h1>Reports Tables</h1>
+<div id="reports-tables" class="section level2">
+<h2>Reports Tables</h2>
 <p>top10_customers&lt;- hd |&gt; filter(customer_name %in% unlist( hd
 |&gt; group_by(customer_name) |&gt; summarize(sales=sum(sales), .groups
 = “drop”) |&gt; arrange(desc(sales)) |&gt; head(10) |&gt;
@@ -302,15 +286,17 @@ pivot_wider(id_cols =country ,names_from =shipper_name , values_from
 =sales ,values_fill = F) |&gt; adorn_totals(“col”) |&gt;
 mutate(pct=percent(round(Total/sum(hd$sales),4)) ) |&gt;
 arrange(desc(Total)) |&gt; head(10)</p>
+<hr />
 </div>
-<div id="gsheet-reports-outputs" class="section level1">
-<h1>GSheet Reports Outputs</h1>
+<div id="gsheet-reports-outputs" class="section level2">
+<h2>GSheet Reports Outputs</h2>
 <p>gs4_auth()</p>
 <p>gs4_create(name = “Sales_MYSQL”)</p>
 <p>gs4_find(“Sales_MYSQL”)</p>
+<hr />
 </div>
-<div id="delete-sheets" class="section level1">
-<h1>Delete Sheets</h1>
+<div id="delete-sheets" class="section level2">
+<h2>Delete Sheets</h2>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “base”,.before =
 1)</p>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “employees”)</p>
@@ -326,9 +312,10 @@ arrange(desc(Total)) |&gt; head(10)</p>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “countries”)</p>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet =
 “Total_per_MY”)</p>
+<hr />
 </div>
-<div id="create-report-sheets" class="section level1">
-<h1>Create Report Sheets</h1>
+<div id="create-report-sheets" class="section level2">
+<h2>Create Report Sheets</h2>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “employees”) |&gt;
 sheet_write(sheet = “employees”,data=emp_sales)</p>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “sales_emp_edu”)
@@ -355,27 +342,28 @@ sheet_add(sheet = “Total_per_MY”) |&gt; sheet_write(sheet =
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_add(sheet = “countries_shippers”)
 |&gt; sheet_write(sheet =
 “countries_shippers”,data=top10_countries_byshippers)</p>
+<hr />
 </div>
-<div id="workbook-manage" class="section level1">
-<h1>Workbook Manage</h1>
+<div id="workbook-manage" class="section level2">
+<h2>Workbook Manage</h2>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_names()</p>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_delete(sheet = “Sheet1”)</p>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_rename(sheet = “base”,new_name
 =“Base” )</p>
+<hr />
+</div>
 </div>
 <div id="outputs" class="section level1">
 <h1>Outputs</h1>
 <p>lst&lt;- list(“Total_per_MY”=Totals_monthyears,
-“Cities”=top10_cities,“customers_my”=top10_customers,“Customers_countries”=top10_customers_countries,
-“items”=top10_items, “countries”=top5_countries,“countriesby_emp”=
-top5_countries_byEmp, “emp_sales”=emp_sales)</p>
+“Cities”=top10_cities,“customers_my”=top10_customers,“Customers_countries”=top10_custo
+ers_countries,“items”=top10_items,“countries”=top5_countries,“countriesby_emp”=
+top5_countries_byEmp,“emp_sales”=emp_sales)</p>
 <p>write.xlsx(lst,file = “reposrt.xlsx”)</p>
-<p>dbWriteTable(conn = conn,name =“top_customers” , value
-=tibble::as_tibble(top10_customers) )</p>
 <p>gs4_find(“Sales_MYSQL”) |&gt; sheet_names()</p>
-</div>
-<div id="upload-tables-to-db" class="section level1">
-<h1>Upload Tables To DB</h1>
+<hr />
+<div id="upload-tables-to-db" class="section level2">
+<h2>Upload Tables To DB</h2>
 <p>dbWriteTable(conn = conn,name =“Sales_Edu” ,value =
 as_tibble(sales_emp_edu))</p>
 <p>dbWriteTable(conn = conn,name = “top_customers_countries”, value =
@@ -386,6 +374,12 @@ as_tibble(top10_customers_countries))</p>
 =as_tibble(Totals_monthyears ))</p>
 <p>dbWriteTable(conn = conn,name = “top_countries_shippers”, value
 =as_tibble(top10_countries_byshippers))</p>
+<p>dbWriteTable(conn = conn,name =“top_customers” , value
+=tibble::as_tibble(top10_customers) )</p>
+<hr />
+<hr />
+<hr />
+</div>
 </div>
 
 
